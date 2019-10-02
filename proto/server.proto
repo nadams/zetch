@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package proto;
+
+service Daemon {
+  rpc List(ListRequest) returns (ListResponse) {}
+}
+
+message Server {
+  string id =  1;
+  string name = 2;
+  string address = 3;
+  string port = 4;
+  string iwad = 5;
+  repeated string pwads = 6;
+  string game_type = 7;
+  string status = 8;
+}
+
+message ListRequest {}
+message ListResponse {
+  repeated Server servers = 1;
+}
