@@ -1,4 +1,4 @@
-module gitlab.node-3.net/nadams/zetch
+module github.com/nadams/zetch
 
 go 1.12
 

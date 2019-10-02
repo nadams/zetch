@@ -2,26 +2,23 @@ package client
 
 import (
 	"context"
-	"io"
 	"net"
 	"time"
 
 	"google.golang.org/grpc"
 
-	"gitlab.node-3.net/nadams/zetch/proto"
+	"github.com/nadams/zetch/proto"
 )
 
 type Client struct {
 	socketLoc string
-	out       io.Writer
 	conn      *grpc.ClientConn
 	client    proto.DaemonClient
 }
 
-func New(socketLoc string, out io.Writer) *Client {
+func New(socketLoc string) *Client {
 	return &Client{
 		socketLoc: socketLoc,
-		out:       out,
 	}
 }
 

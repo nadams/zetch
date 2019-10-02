@@ -3,7 +3,7 @@ package daemon
 import (
 	"context"
 
-	"gitlab.node-3.net/nadams/zetch/proto"
+	"github.com/nadams/zetch/proto"
 )
 
 type Server struct{}

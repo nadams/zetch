@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gitlab.node-3.net/nadams/zetch/proto"
+	"github.com/nadams/zetch/proto"
 )
 
 type Daemon struct {
