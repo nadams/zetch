@@ -1,8 +1,11 @@
 package daemon
 
 import (
+	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 
@@ -21,9 +24,9 @@ func New(socket string) *Daemon {
 }
 
 func (d *Daemon) Listen() error {
-	if err := os.RemoveAll(d.socket); err != nil {
-		return err
-	}
+	defer func() {
+		os.RemoveAll(d.socket)
+	}()
 
 	l, err := net.Listen("unix", d.socket)
 	if err != nil {
@@ -33,6 +36,19 @@ func (d *Daemon) Listen() error {
 
 	d.server = grpc.NewServer()
 	proto.RegisterDaemonServer(d.server, &Server{})
+
+	log.Println("server started")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		<-quit
+
+		log.Println("quitting...")
+
+		d.server.Stop()
+	}()
 
 	return d.server.Serve(l)
 }

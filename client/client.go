@@ -47,6 +47,6 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) Version() (*proto.ListResponse, error) {
+func (c *Client) List() (*proto.ListResponse, error) {
 	return c.client.List(context.Background(), &proto.ListRequest{})
 }
