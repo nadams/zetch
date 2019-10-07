@@ -62,7 +62,7 @@ func main() {
 		case list.FullCommand():
 			out, err = c.List()
 		case attach.FullCommand():
-			if err := c.Attach(*attachID, os.Stdout); err != nil {
+			if err := c.Attach(*attachID, os.Stdin, os.Stdout); err != nil {
 				log.Println(err)
 				return
 			}

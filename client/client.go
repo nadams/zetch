@@ -1,9 +1,11 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"strings"
 	"time"
@@ -75,14 +77,27 @@ func (c *Client) List() (*ListResponse, error) {
 	return &ListResponse{servers: resp.Servers}, nil
 }
 
-func (c *Client) Attach(id string, out io.Writer) error {
-	resp, err := c.client.Attach(context.Background(), &proto.AttachRequest{Id: id})
+func (c *Client) Attach(id string, in io.Reader, out io.Writer) error {
+	attachClient, err := c.client.Attach(context.Background())
 	if err != nil {
 		return err
 	}
 
+	defer attachClient.CloseSend()
+
+	attachClient.Send(&proto.AttachRequest{Id: id})
+
+	go func() {
+		scanner := bufio.NewScanner(in)
+		for scanner.Scan() {
+			msg := scanner.Text()
+			log.Println(msg)
+			attachClient.Send(&proto.AttachRequest{Id: id, Msg: msg})
+		}
+	}()
+
 	for {
-		msg, err := resp.Recv()
+		msg, err := attachClient.Recv()
 		if err == io.EOF {
 			break
 		}

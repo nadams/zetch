@@ -12,6 +12,7 @@ type Instance struct {
 	id     string
 	stdout io.ReadCloser
 	stderr io.ReadCloser
+	stdin  io.WriteCloser
 	cmd    *exec.Cmd
 }
 
@@ -36,8 +37,14 @@ func (i *Instance) Start() error {
 		return err
 	}
 
+	stdin, err := i.cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
 	i.stdout = stdout
 	i.stderr = stderr
+	i.stdin = stdin
 
 	if err := i.cmd.Run(); err != nil {
 		log.Println(err)
@@ -46,11 +53,17 @@ func (i *Instance) Start() error {
 	return nil
 }
 
-func (i *Instance) Attach(out chan<- string) error {
-	scanner := bufio.NewScanner(i.stdout)
+func (i *Instance) Attach(in <-chan string, out chan<- string) error {
+	go func() {
+		scanner := bufio.NewScanner(i.stdout)
 
-	for scanner.Scan() {
-		out <- scanner.Text()
+		for scanner.Scan() {
+			out <- scanner.Text()
+		}
+	}()
+
+	for msg := range in {
+		io.WriteString(i.stdin, msg)
 	}
 
 	return nil

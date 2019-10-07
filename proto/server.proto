@@ -4,7 +4,7 @@ package proto;
 
 service Daemon {
   rpc List(ListRequest) returns (ListResponse) {}
-  rpc Attach(AttachRequest) returns (stream ServerOutput) {}
+  rpc Attach(stream AttachRequest) returns (stream ServerOutput) {}
 }
 
 message Server {
@@ -25,6 +25,7 @@ message ListResponse {
 
 message AttachRequest {
   string id = 1;
+  string msg = 2;
 }
 
 message ServerOutput {

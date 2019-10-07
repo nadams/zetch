@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/nadams/zetch/doom"
 	"github.com/nadams/zetch/proto"
@@ -35,10 +36,15 @@ func (s *Server) List(_ context.Context, in *proto.ListRequest) (*proto.ListResp
 	return &proto.ListResponse{Servers: servers}, nil
 }
 
-func (s *Server) Attach(in *proto.AttachRequest, stream proto.Daemon_AttachServer) error {
+func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 	var instance *doom.Instance
+	recv, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+
 	for _, i := range s.d.instances {
-		if i.ID() == in.Id {
+		if i.ID() == recv.Id {
 			instance = i
 			break
 		}
@@ -46,14 +52,31 @@ func (s *Server) Attach(in *proto.AttachRequest, stream proto.Daemon_AttachServe
 
 	if instance != nil {
 		out := make(chan string)
+		in := make(chan string)
+
 		go func() {
-			_ = instance.Attach(out)
+			_ = instance.Attach(in, out)
+		}()
+
+		go func() {
+			for {
+				req, err := stream.Recv()
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				if req.Msg != "" {
+					in <- req.Msg
+				}
+			}
 		}()
 
 		for {
 			select {
 			case <-stream.Context().Done():
 				close(out)
+				close(in)
 				return nil
 			case msg := <-out:
 				stream.Send(&proto.ServerOutput{Msg: msg})
