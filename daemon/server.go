@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nadams/zetch/doom"
 	"github.com/nadams/zetch/proto"
 )
 
@@ -32,4 +33,33 @@ func (s *Server) List(_ context.Context, in *proto.ListRequest) (*proto.ListResp
 	}
 
 	return &proto.ListResponse{Servers: servers}, nil
+}
+
+func (s *Server) Attach(in *proto.AttachRequest, stream proto.Daemon_AttachServer) error {
+	var instance *doom.Instance
+	for _, i := range s.d.instances {
+		if i.ID() == in.Id {
+			instance = i
+			break
+		}
+	}
+
+	if instance != nil {
+		out := make(chan string)
+		go func() {
+			_ = instance.Attach(out)
+		}()
+
+		for {
+			select {
+			case <-stream.Context().Done():
+				close(out)
+				return nil
+			case msg := <-out:
+				stream.Send(&proto.ServerOutput{Msg: msg})
+			}
+		}
+	}
+
+	return nil
 }

@@ -20,7 +20,9 @@ var (
 	daemonMode   = app.Command("daemon", "Run this as a daemon")
 	daemonConfig = daemonMode.Flag("config-dir", "Configuration directory").Default(configDir()).String()
 
-	list = app.Command("list", "List running servers")
+	list     = app.Command("list", "List running servers")
+	attach   = app.Command("attach", "Attach to server output")
+	attachID = attach.Arg("id", "Id of server").Required().String()
 )
 
 type Out interface {
@@ -59,6 +61,11 @@ func main() {
 		switch parsed {
 		case list.FullCommand():
 			out, err = c.List()
+		case attach.FullCommand():
+			if err := c.Attach(*attachID, os.Stdout); err != nil {
+				log.Println(err)
+				return
+			}
 		}
 
 		if err != nil {

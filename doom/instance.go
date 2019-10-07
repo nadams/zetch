@@ -1,22 +1,17 @@
 package doom
 
 import (
-	"bytes"
+	"bufio"
 	"io"
 	"log"
-	"os"
 	"os/exec"
-
-	"github.com/armon/circbuf"
 )
-
-const bufferSize = 1024 * 1024 // 1mb
 
 type Instance struct {
 	conf   Config
 	id     string
-	stdout *circbuf.Buffer
-	stderr *circbuf.Buffer
+	stdout io.ReadCloser
+	stderr io.ReadCloser
 	cmd    *exec.Cmd
 }
 
@@ -28,23 +23,21 @@ func NewInstance(c Config, id string) *Instance {
 }
 
 func (i *Instance) Start() error {
-	stdout, err := circbuf.NewBuffer(bufferSize)
+	args := i.conf.Args()
+	i.cmd = exec.Command("zandronum-server", args...)
+
+	stdout, err := i.cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
 
-	stderr, err := circbuf.NewBuffer(bufferSize)
+	stderr, err := i.cmd.StderrPipe()
 	if err != nil {
 		return err
 	}
 
 	i.stdout = stdout
 	i.stderr = stderr
-
-	args := i.conf.Args()
-	i.cmd = exec.Command("zandronum-server", args...)
-	i.cmd.Stdout = i.stdout
-	i.cmd.Stderr = i.stderr
 
 	if err := i.cmd.Run(); err != nil {
 		log.Println(err)
@@ -53,9 +46,11 @@ func (i *Instance) Start() error {
 	return nil
 }
 
-func (i *Instance) Attach() error {
-	if _, err := io.Copy(os.Stdout, bytes.NewReader(i.stdout.Bytes())); err != nil {
-		return err
+func (i *Instance) Attach(out chan<- string) error {
+	scanner := bufio.NewScanner(i.stdout)
+
+	for scanner.Scan() {
+		out <- scanner.Text()
 	}
 
 	return nil

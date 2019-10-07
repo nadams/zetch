@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -72,4 +73,25 @@ func (c *Client) List() (*ListResponse, error) {
 	}
 
 	return &ListResponse{servers: resp.Servers}, nil
+}
+
+func (c *Client) Attach(id string, out io.Writer) error {
+	resp, err := c.client.Attach(context.Background(), &proto.AttachRequest{Id: id})
+	if err != nil {
+		return err
+	}
+
+	for {
+		msg, err := resp.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(out, msg.Msg)
+	}
+
+	return nil
 }
