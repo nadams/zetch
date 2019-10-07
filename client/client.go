@@ -2,9 +2,12 @@ package client
 
 import (
 	"context"
+	"io"
 	"net"
+	"strings"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
 	"google.golang.org/grpc"
 
 	"github.com/nadams/zetch/proto"
@@ -47,6 +50,26 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) List() (*proto.ListResponse, error) {
-	return c.client.List(context.Background(), &proto.ListRequest{})
+type ListResponse struct {
+	servers []*proto.Server
+}
+
+func (l *ListResponse) Out(w io.Writer) {
+	t := tablewriter.NewWriter(w)
+	t.SetHeader([]string{"name", "mode", "pwads", "port"})
+
+	for _, server := range l.servers {
+		t.Append([]string{server.Name, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
+	}
+
+	t.Render()
+}
+
+func (c *Client) List() (*ListResponse, error) {
+	resp, err := c.client.List(context.Background(), &proto.ListRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResponse{servers: resp.Servers}, nil
 }

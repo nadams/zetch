@@ -5,10 +5,10 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
@@ -32,10 +32,12 @@ var defaultConfig = Config{
 }
 
 type Daemon struct {
+	m          sync.Mutex
 	socket     string
 	configPath *string
 	config     *Config
 	server     *grpc.Server
+	instances  []*doom.Instance
 }
 
 func New(socket string, config *string) *Daemon {
@@ -53,8 +55,6 @@ func (d *Daemon) Listen() error {
 
 	d.config = &c
 
-	spew.Dump(d.config)
-
 	defer func() {
 		os.RemoveAll(d.socket)
 	}()
@@ -70,7 +70,7 @@ func (d *Daemon) Listen() error {
 	defer l.Close()
 
 	d.server = grpc.NewServer()
-	proto.RegisterDaemonServer(d.server, &Server{})
+	proto.RegisterDaemonServer(d.server, NewServer(d))
 
 	log.Println("server started")
 
@@ -95,6 +95,9 @@ func (d *Daemon) Listen() error {
 }
 
 func (d *Daemon) launchServer() error {
+	d.m.Lock()
+	defer d.m.Unlock()
+
 	confs, err := ioutil.ReadDir("conf.d")
 	if err != nil {
 		return err
@@ -108,18 +111,17 @@ func (d *Daemon) launchServer() error {
 				continue
 			}
 
-			go func() {
-				args := conf.Args()
-				spew.Dump(args)
-				cmd := exec.Command("zandronum-server", args...)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				cmd.Stdin = os.Stdin
-				if err := cmd.Run(); err != nil {
-					log.Println(err)
-				}
-			}()
+			d.instances = append(d.instances, doom.NewInstance(conf))
 		}
+	}
+
+	for _, instance := range d.instances {
+		go func(i *doom.Instance) {
+			if err := i.Start(); err != nil {
+				log.Println(err)
+				return
+			}
+		}(instance)
 	}
 
 	return nil

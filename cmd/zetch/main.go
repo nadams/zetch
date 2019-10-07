@@ -1,11 +1,11 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/shibukawa/configdir"
 	"gopkg.in/alecthomas/kingpin.v2"
 
@@ -22,6 +22,10 @@ var (
 
 	list = app.Command("list", "List running servers")
 )
+
+type Out interface {
+	Out(io.Writer)
+}
 
 func configDir() string {
 	folders := configdir.New("zetch", "zetch").QueryFolders(configdir.Global)
@@ -49,9 +53,19 @@ func main() {
 		}
 		defer c.Close()
 
+		var out Out
+		var err error
+
 		switch parsed {
 		case list.FullCommand():
-			spew.Dump(c.List())
+			out, err = c.List()
 		}
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		out.Out(os.Stdout)
 	}
 }
