@@ -56,10 +56,10 @@ type ListResponse struct {
 
 func (l *ListResponse) Out(w io.Writer) {
 	t := tablewriter.NewWriter(w)
-	t.SetHeader([]string{"name", "mode", "pwads", "port"})
+	t.SetHeader([]string{"id", "name", "mode", "pwads", "port"})
 
 	for _, server := range l.servers {
-		t.Append([]string{server.Name, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
+		t.Append([]string{server.Id, server.Name, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
 	}
 
 	t.Render()

@@ -13,6 +13,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0
 	github.com/spf13/cobra v0.0.5
+	github.com/twinj/uuid v1.0.0
 	google.golang.org/grpc v1.24.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )

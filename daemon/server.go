@@ -21,11 +21,13 @@ func (s *Server) List(_ context.Context, in *proto.ListRequest) (*proto.ListResp
 
 	servers := make([]*proto.Server, 0, len(s.d.instances))
 	for _, instance := range s.d.instances {
+		conf := instance.Conf()
 		servers = append(servers, &proto.Server{
-			Name:     instance.Conf.Name,
-			Port:     fmt.Sprintf("%d", instance.Conf.Port),
-			Pwads:    instance.Conf.WADs,
-			GameType: string(instance.Conf.Mode),
+			Id:       instance.ID(),
+			Name:     conf.Name,
+			Port:     fmt.Sprintf("%d", conf.Port),
+			Pwads:    conf.WADs,
+			GameType: string(conf.Mode),
 		})
 	}
 

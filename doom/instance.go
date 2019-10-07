@@ -13,15 +13,17 @@ import (
 const bufferSize = 1024 * 1024 // 1mb
 
 type Instance struct {
-	Conf   Config
+	conf   Config
+	id     string
 	stdout *circbuf.Buffer
 	stderr *circbuf.Buffer
 	cmd    *exec.Cmd
 }
 
-func NewInstance(c Config) *Instance {
+func NewInstance(c Config, id string) *Instance {
 	return &Instance{
-		Conf: c,
+		conf: c,
+		id:   id,
 	}
 }
 
@@ -39,7 +41,7 @@ func (i *Instance) Start() error {
 	i.stdout = stdout
 	i.stderr = stderr
 
-	args := i.Conf.Args()
+	args := i.conf.Args()
 	i.cmd = exec.Command("zandronum-server", args...)
 	i.cmd.Stdout = i.stdout
 	i.cmd.Stderr = i.stderr
@@ -57,4 +59,12 @@ func (i *Instance) Attach() error {
 	}
 
 	return nil
+}
+
+func (i *Instance) Conf() Config {
+	return i.conf
+}
+
+func (i *Instance) ID() string {
+	return i.id
 }
