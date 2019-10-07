@@ -63,7 +63,7 @@ func (i *Instance) Attach(in <-chan string, out chan<- string) error {
 	}()
 
 	for msg := range in {
-		io.WriteString(i.stdin, msg)
+		io.WriteString(i.stdin, msg+"\n")
 	}
 
 	return nil
