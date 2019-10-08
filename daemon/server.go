@@ -25,8 +25,8 @@ func (s *Server) List(_ context.Context, in *proto.ListRequest) (*proto.ListResp
 	for _, instance := range s.d.instances {
 		conf := instance.Conf()
 		servers = append(servers, &proto.Server{
-			Id:       instance.ID(),
 			Name:     conf.Name,
+			HostName: conf.Hostname,
 			Port:     fmt.Sprintf("%d", conf.Port),
 			Pwads:    conf.WADs,
 			GameType: string(conf.Mode),
@@ -44,7 +44,7 @@ func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 	}
 
 	for _, i := range s.d.instances {
-		if i.ID() == recv.Id {
+		if i.Conf().Name == recv.Name {
 			instance = i
 			break
 		}

@@ -1,4 +1,5 @@
-name = "ZDCTF"
+name = "zdctf"
+hostname = "ZDCTF"
 mode = "ctf"
 port = 10666
 wads = ["zdctfmp.wad", "zdctfmp2.wad", "zdctfmp3-.wad"]

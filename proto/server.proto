@@ -8,8 +8,8 @@ service Daemon {
 }
 
 message Server {
-  string id =  1;
-  string name = 2;
+  string name =  1;
+  string host_name = 2;
   string address = 3;
   string port = 4;
   string iwad = 5;
@@ -24,7 +24,7 @@ message ListResponse {
 }
 
 message AttachRequest {
-  string id = 1;
+  string name = 1;
   string msg = 2;
 }
 

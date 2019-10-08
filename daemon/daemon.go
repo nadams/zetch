@@ -13,7 +13,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/twinj/uuid"
 	"google.golang.org/grpc"
 
 	"github.com/nadams/zetch/doom"
@@ -112,7 +111,7 @@ func (d *Daemon) launchServer() error {
 				continue
 			}
 
-			d.instances = append(d.instances, doom.NewInstance(conf, uuid.NewV4().String()))
+			d.instances = append(d.instances, doom.NewInstance(conf))
 		}
 	}
 

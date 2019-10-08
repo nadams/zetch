@@ -9,17 +9,15 @@ import (
 
 type Instance struct {
 	conf   Config
-	id     string
 	stdout io.ReadCloser
 	stderr io.ReadCloser
 	stdin  io.WriteCloser
 	cmd    *exec.Cmd
 }
 
-func NewInstance(c Config, id string) *Instance {
+func NewInstance(c Config) *Instance {
 	return &Instance{
 		conf: c,
-		id:   id,
 	}
 }
 
@@ -71,8 +69,4 @@ func (i *Instance) Attach(in <-chan string, out chan<- string) error {
 
 func (i *Instance) Conf() Config {
 	return i.conf
-}
-
-func (i *Instance) ID() string {
-	return i.id
 }

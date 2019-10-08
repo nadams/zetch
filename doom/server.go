@@ -23,6 +23,7 @@ func (a args) Add(key, value string) args {
 
 type Config struct {
 	Name          string   `toml:"name"`
+	Hostname      string   `toml:"hostname"`
 	Mode          Mode     `toml:"mode"`
 	Port          int16    `toml:"port"`
 	WADs          []string `toml:"wads"`
@@ -36,7 +37,7 @@ type Config struct {
 
 func (c Config) Args() []string {
 	args := make(args, 0, 20).
-		Add("+sv_hostname", c.Name).
+		Add("+sv_hostname", c.Hostname).
 		Add("-port", strconv.Itoa(int(c.Port))).
 		Add("+skill", "4").
 		Add("+sv_maxplayers", "16").

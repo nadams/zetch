@@ -59,10 +59,10 @@ type ListResponse struct {
 
 func (l *ListResponse) Out(w io.Writer) {
 	t := tablewriter.NewWriter(w)
-	t.SetHeader([]string{"id", "name", "mode", "pwads", "port"})
+	t.SetHeader([]string{"name", "hostname", "mode", "pwads", "port"})
 
 	for _, server := range l.servers {
-		t.Append([]string{server.Id, server.Name, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
+		t.Append([]string{server.Name, server.HostName, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
 	}
 
 	t.Render()
@@ -77,7 +77,7 @@ func (c *Client) List() (*ListResponse, error) {
 	return &ListResponse{servers: resp.Servers}, nil
 }
 
-func (c *Client) Attach(id string, in io.Reader, out io.Writer) error {
+func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 	attachClient, err := c.client.Attach(context.Background())
 	if err != nil {
 		return err
@@ -85,14 +85,14 @@ func (c *Client) Attach(id string, in io.Reader, out io.Writer) error {
 
 	defer attachClient.CloseSend()
 
-	attachClient.Send(&proto.AttachRequest{Id: id})
+	attachClient.Send(&proto.AttachRequest{Name: name})
 
 	go func() {
 		scanner := bufio.NewScanner(in)
 		for scanner.Scan() {
 			msg := scanner.Text()
 			log.Println(msg)
-			attachClient.Send(&proto.AttachRequest{Id: id, Msg: msg})
+			attachClient.Send(&proto.AttachRequest{Name: name, Msg: msg})
 		}
 	}()
 
