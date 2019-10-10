@@ -1,9 +1,12 @@
 package daemon
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"sync"
 
 	"github.com/nadams/zetch/doom"
 	"github.com/nadams/zetch/proto"
@@ -51,37 +54,69 @@ func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 	}
 
 	if instance != nil {
-		out := make(chan string)
-		in := make(chan string)
+		var wg sync.WaitGroup
+		r, w := io.Pipe()
+		defer r.Close()
+		defer w.Close()
 
 		go func() {
-			_ = instance.Attach(in, out)
+			<-stream.Context().Done()
+
+			w.Close()
+			r.Close()
 		}()
 
+		wg.Add(1)
 		go func() {
-			for {
-				req, err := stream.Recv()
-				if err != nil {
-					log.Println(err)
-					return
-				}
+			defer wg.Done()
 
-				if req.Msg != "" {
-					in <- req.Msg
-				}
+			scanner := bufio.NewScanner(r)
+			for scanner.Scan() {
+				stream.Send(&proto.ServerOutput{
+					Msg: scanner.Text(),
+				})
 			}
 		}()
 
-		for {
-			select {
-			case <-stream.Context().Done():
-				close(out)
-				close(in)
-				return nil
-			case msg := <-out:
-				stream.Send(&proto.ServerOutput{Msg: msg})
-			}
+		if err := instance.Attach(stream.Context(), w); err != nil {
+			return err
 		}
+
+		log.Println("waiting for wg")
+		wg.Wait()
+		log.Println("done waiting for wg")
+
+		//  out := make(chan string)
+		//  in := make(chan string)
+
+		//  go func() {
+		//    _ = instance.Attach(in, out)
+		//  }()
+
+		//  go func() {
+		//    for {
+		//      req, err := stream.Recv()
+		//      if err != nil {
+		//        log.Println(err)
+		//        return
+		//      }
+
+		//      if req.Msg != "" {
+		//        in <- req.Msg
+		//      }
+		//    }
+		//  }()
+
+		//  for {
+		//    select {
+		//    case <-stream.Context().Done():
+		//      close(out)
+		//      close(in)
+		//      return nil
+		//    case msg := <-out:
+		//      stream.Send(&proto.ServerOutput{Msg: msg})
+		//    }
+		//  }
 	}
 
 	return nil

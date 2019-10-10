@@ -78,12 +78,13 @@ func (c *Client) List() (*ListResponse, error) {
 }
 
 func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
-	attachClient, err := c.client.Attach(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	attachClient, err := c.client.Attach(ctx)
 	if err != nil {
 		return err
 	}
-
-	defer attachClient.CloseSend()
 
 	attachClient.Send(&proto.AttachRequest{Name: name})
 

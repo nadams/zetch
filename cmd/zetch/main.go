@@ -4,7 +4,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/shibukawa/configdir"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -53,6 +55,18 @@ func main() {
 			log.Println(err)
 			return
 		}
+
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+		go func() {
+			<-quit
+
+			log.Println("quitting...")
+
+			c.Close()
+		}()
+
 		defer c.Close()
 
 		var out Out

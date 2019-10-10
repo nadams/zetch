@@ -56,6 +56,7 @@ func (d *Daemon) Listen() error {
 	d.config = &c
 
 	defer func() {
+		log.Println("removing socket")
 		os.RemoveAll(d.socket)
 	}()
 

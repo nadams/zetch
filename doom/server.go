@@ -46,7 +46,9 @@ func (c Config) Args() []string {
 		Add("+zadmflags", fmt.Sprintf("%v", c.ZADmflags)).
 		Add("+compatflags", fmt.Sprintf("%v", c.Compatflags)).
 		Add("+compatflags2", fmt.Sprintf("%v", c.Compatflags2)).
-		Add("+zacompatflags", fmt.Sprintf("%v", c.ZADmflags))
+		Add("+zacompatflags", fmt.Sprintf("%v", c.ZADmflags)).
+		Add("+sv_updatemaster", "false").
+		Add(fmt.Sprintf("+%s", c.Mode), "1")
 
 	for _, wad := range c.WADs {
 		args = args.Add("-file", wad)

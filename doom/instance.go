@@ -1,18 +1,21 @@
 package doom
 
 import (
-	"bufio"
+	"bytes"
+	"context"
 	"io"
 	"log"
 	"os/exec"
 )
 
 type Instance struct {
-	conf   Config
-	stdout io.ReadCloser
-	stderr io.ReadCloser
-	stdin  io.WriteCloser
-	cmd    *exec.Cmd
+	conf       Config
+	stdoutBuf  bytes.Buffer
+	stdoutPipe io.Reader
+	stdout     io.ReadCloser
+	stderr     io.ReadCloser
+	stdin      io.WriteCloser
+	cmd        *exec.Cmd
 }
 
 func NewInstance(c Config) *Instance {
@@ -29,6 +32,8 @@ func (i *Instance) Start() error {
 	if err != nil {
 		return err
 	}
+
+	i.stdoutPipe = io.TeeReader(stdout, &i.stdoutBuf)
 
 	stderr, err := i.cmd.StderrPipe()
 	if err != nil {
@@ -51,20 +56,14 @@ func (i *Instance) Start() error {
 	return nil
 }
 
-func (i *Instance) Attach(in <-chan string, out chan<- string) error {
-	go func() {
-		scanner := bufio.NewScanner(i.stdout)
-
-		for scanner.Scan() {
-			out <- scanner.Text()
-		}
-	}()
-
-	for msg := range in {
-		io.WriteString(i.stdin, msg+"\n")
+func (i *Instance) Attach(ctx context.Context, out io.Writer) error {
+	if _, err := io.Copy(out, &i.stdoutBuf); err != nil {
+		return err
 	}
 
-	return nil
+	_, err := io.Copy(NewWriter(ctx, out), i.stdoutPipe)
+	return err
+	//return err
 }
 
 func (i *Instance) Conf() Config {
