@@ -112,6 +112,10 @@ func (d *Daemon) launchServer() error {
 				continue
 			}
 
+			if conf.Disabled {
+				continue
+			}
+
 			d.instances = append(d.instances, doom.NewInstance(conf))
 		}
 	}

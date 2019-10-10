@@ -33,6 +33,7 @@ type Config struct {
 	Compatflags   uint64   `toml:"compatflags"`
 	Compatflags2  uint64   `toml:"compatflags2"`
 	ZACompatFlags uint64   `toml:"zacompatflags"`
+	Disabled      bool     `toml:"disabled"`
 }
 
 func (c Config) Args() []string {
