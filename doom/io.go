@@ -3,7 +3,6 @@ package doom
 import (
 	"context"
 	"io"
-	"log"
 )
 
 type ioreturn struct {
@@ -62,10 +61,8 @@ func (c *CtxWriter) Write(buf []byte) (int, error) {
 
 	select {
 	case r := <-ch:
-		log.Println("copy")
 		return r.n, r.err
 	case <-c.ctx.Done():
-		log.Println("writer done")
 		return 0, c.ctx.Err()
 	}
 }

@@ -1,13 +1,15 @@
 package client
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
@@ -79,7 +81,14 @@ func (c *Client) List() (*ListResponse, error) {
 
 func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go func() {
+		<-quit
+		log.Println("cancelling context")
+		cancel()
+	}()
 
 	attachClient, err := c.client.Attach(ctx)
 	if err != nil {
@@ -88,14 +97,14 @@ func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 
 	attachClient.Send(&proto.AttachRequest{Name: name})
 
-	go func() {
-		scanner := bufio.NewScanner(in)
-		for scanner.Scan() {
-			msg := scanner.Text()
-			log.Println(msg)
-			attachClient.Send(&proto.AttachRequest{Name: name, Msg: msg})
-		}
-	}()
+	//go func() {
+	//  scanner := bufio.NewScanner(in)
+	//  for scanner.Scan() {
+	//    msg := scanner.Text()
+	//    log.Println(msg)
+	//    attachClient.Send(&proto.AttachRequest{Name: name, Msg: msg})
+	//  }
+	//}()
 
 	for {
 		msg, err := attachClient.Recv()
