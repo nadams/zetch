@@ -47,7 +47,12 @@ func (i *Instance) Start() error {
 	return nil
 }
 
-func (i *Instance) Attach(ctx context.Context, out io.Writer) error {
+func (i *Instance) Attach(ctx context.Context, out io.Writer, in io.Reader) error {
+	go func() {
+		if _, err := io.Copy(i.stdinPipe, NewReader(ctx, in)); err != nil {
+			log.Println(err)
+		}
+	}()
 	buf := bytes.NewBuffer(i.stdoutBuf.Bytes())
 	if _, err := io.Copy(out, buf); err != nil {
 		return err

@@ -55,14 +55,14 @@ func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 
 	if instance != nil {
 		var wg sync.WaitGroup
-		r, w := io.Pipe()
+		r, stdout := io.Pipe()
 		defer r.Close()
-		defer w.Close()
+		defer stdout.Close()
 
 		go func() {
 			<-stream.Context().Done()
 
-			w.Close()
+			stdout.Close()
 			r.Close()
 		}()
 
@@ -78,7 +78,24 @@ func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 			}
 		}()
 
-		if err := instance.Attach(stream.Context(), w); err != nil {
+		stdin, stdinW := io.Pipe()
+		go func() {
+			for {
+				in, err := stream.Recv()
+				if err == io.EOF {
+					return
+				}
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				if _, err := io.WriteString(stdinW, in.Msg); err != nil {
+					log.Println(err)
+				}
+			}
+		}()
+
+		if err := instance.Attach(stream.Context(), stdout, stdin); err != nil {
 			return err
 		}
 

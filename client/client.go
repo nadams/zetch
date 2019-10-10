@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -97,14 +98,13 @@ func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 
 	attachClient.Send(&proto.AttachRequest{Name: name})
 
-	//go func() {
-	//  scanner := bufio.NewScanner(in)
-	//  for scanner.Scan() {
-	//    msg := scanner.Text()
-	//    log.Println(msg)
-	//    attachClient.Send(&proto.AttachRequest{Name: name, Msg: msg})
-	//  }
-	//}()
+	go func() {
+		scanner := bufio.NewScanner(in)
+		for scanner.Scan() {
+			msg := scanner.Text()
+			attachClient.Send(&proto.AttachRequest{Name: name, Msg: msg + "\n"})
+		}
+	}()
 
 	for {
 		msg, err := attachClient.Recv()
