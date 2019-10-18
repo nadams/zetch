@@ -9,6 +9,7 @@ require (
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.3.2
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0
