@@ -22,9 +22,11 @@ var (
 	daemonMode   = app.Command("daemon", "Run this as a daemon")
 	daemonConfig = daemonMode.Flag("config-dir", "Configuration directory").Default(configDir()).String()
 
-	list     = app.Command("list", "List running servers")
-	attach   = app.Command("attach", "Attach to server output")
-	attachID = attach.Arg("id", "Id of server").Required().String()
+	list       = app.Command("list", "List running servers")
+	attach     = app.Command("attach", "Attach to server output")
+	attachName = attach.Arg("name", "Name of server").Required().String()
+	stop       = app.Command("stop", "Stop a server")
+	stopName   = stop.Arg("name", "Server name").Required().String()
 )
 
 type Out interface {
@@ -76,7 +78,12 @@ func main() {
 		case list.FullCommand():
 			out, err = c.List()
 		case attach.FullCommand():
-			if err := c.Attach(*attachID, os.Stdin, os.Stdout); err != nil {
+			if err := c.Attach(*attachName, os.Stdin, os.Stdout); err != nil {
+				log.Println(err)
+				return
+			}
+		case stop.FullCommand():
+			if err := c.Stop(*stopName); err != nil {
 				log.Println(err)
 				return
 			}

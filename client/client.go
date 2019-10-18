@@ -62,10 +62,10 @@ type ListResponse struct {
 
 func (l *ListResponse) Out(w io.Writer) {
 	t := tablewriter.NewWriter(w)
-	t.SetHeader([]string{"name", "hostname", "mode", "pwads", "port"})
+	t.SetHeader([]string{"name", "hostname", "mode", "pwads", "port", "status"})
 
 	for _, server := range l.servers {
-		t.Append([]string{server.Name, server.HostName, server.GameType, strings.Join(server.Pwads, ", "), server.Port})
+		t.Append([]string{server.Name, server.HostName, server.GameType, strings.Join(server.Pwads, ", "), server.Port, server.Status})
 	}
 
 	t.Render()
@@ -119,4 +119,9 @@ func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 	}
 
 	return nil
+}
+
+func (c *Client) Stop(name string) error {
+	_, err := c.client.Stop(context.Background(), &proto.StopRequest{Name: name})
+	return err
 }

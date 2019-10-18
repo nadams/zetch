@@ -33,10 +33,29 @@ func (s *Server) List(_ context.Context, in *proto.ListRequest) (*proto.ListResp
 			Port:     fmt.Sprintf("%d", conf.Port),
 			Pwads:    conf.WADs,
 			GameType: string(conf.Mode),
+			Status: func() string {
+				if instance.Running() {
+					return "running"
+				}
+				return "stopped"
+			}(),
 		})
 	}
 
 	return &proto.ListResponse{Servers: servers}, nil
+}
+
+func (s *Server) Stop(ctx context.Context, in *proto.StopRequest) (*proto.StopResponse, error) {
+	s.d.m.Lock()
+	defer s.d.m.Unlock()
+
+	for _, i := range s.d.instances {
+		if i.Conf().Name == in.Name {
+			log.Println("stopping server", i.Stop())
+		}
+	}
+
+	return nil, nil
 }
 
 func (s *Server) Attach(stream proto.Daemon_AttachServer) error {

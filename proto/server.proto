@@ -5,6 +5,7 @@ package proto;
 service Daemon {
   rpc List(ListRequest) returns (ListResponse) {}
   rpc Attach(stream AttachRequest) returns (stream ServerOutput) {}
+  rpc Stop(StopRequest) returns (StopResponse) {}
 }
 
 message Server {
@@ -30,4 +31,9 @@ message AttachRequest {
 
 message ServerOutput {
   string msg = 1;
+}
+
+message StopResponse {}
+message StopRequest {
+  string name = 1;
 }

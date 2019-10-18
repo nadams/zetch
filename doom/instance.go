@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"syscall"
 
 	"github.com/hashicorp/go-multierror"
 )
@@ -35,6 +36,10 @@ func NewInstance(c Config) *Instance {
 	}
 }
 
+func (i *Instance) Running() bool {
+	return i.cmd != nil && (i.cmd.ProcessState == nil || i.cmd.ProcessState.Exited())
+}
+
 func (i *Instance) Stop() error {
 	var errs *multierror.Error
 
@@ -46,6 +51,12 @@ func (i *Instance) Stop() error {
 
 	if i.stdinpw != nil {
 		if err := i.stdinpw.Close(); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+	}
+
+	if i.cmd != nil {
+		if err := i.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
