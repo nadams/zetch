@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"syscall"
-
-	"github.com/hashicorp/go-multierror"
+	"time"
 )
 
 type Instance struct {
@@ -26,6 +26,10 @@ func NewInstance(c Config) *Instance {
 	stdinpr, stdinpw := io.Pipe()
 	stdoutBuf := new(bytes.Buffer)
 
+	go func() {
+		io.Copy(ioutil.Discard, stdoutpr)
+	}()
+
 	return &Instance{
 		conf:      c,
 		stdoutpr:  stdoutpr,
@@ -41,49 +45,55 @@ func (i *Instance) Running() bool {
 }
 
 func (i *Instance) Stop() error {
-	var errs *multierror.Error
-
-	if i.stdoutpr != nil {
-		if err := i.stdoutpr.Close(); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if i.stdinpw != nil {
-		if err := i.stdinpw.Close(); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	if i.cmd != nil {
+	if i.cmd != nil && i.cmd.ProcessState == nil {
 		if err := i.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-			errs = multierror.Append(errs, err)
+			return err
 		}
-	}
 
-	return errs.ErrorOrNil()
-}
+		for {
+			if i.cmd.ProcessState != nil {
+				break
+			}
 
-func (i *Instance) Start() error {
-	i.cmd = exec.Command("zandronum-server", i.conf.Args()...)
-	i.cmd.Stdout = io.MultiWriter(i.stdoutpw, i.stdoutBuf)
-	i.cmd.Stdin = i.stdinpr
-
-	if err := i.cmd.Run(); err != nil {
-		log.Println(err)
+			time.Sleep(time.Millisecond * 250)
+		}
 	}
 
 	return nil
 }
 
-func (i *Instance) Attach(ctx context.Context, out io.Writer, in io.Reader) error {
+func (i *Instance) Start() error {
+	if i.cmd == nil || i.cmd.ProcessState != nil {
+		i.cmd = exec.Command("zandronum-server", i.conf.Args()...)
+		i.cmd.Stdout = io.MultiWriter(i.stdoutpw, i.stdoutBuf)
+		i.cmd.Stdin = i.stdinpr
+
+		return i.cmd.Run()
+	}
+
+	return nil
+}
+
+func (i *Instance) Attach(ctx context.Context, out io.WriteCloser, in io.ReadCloser) error {
+	copyStdout := func(out io.Writer) error {
+		_, err := io.Copy(out, bytes.NewBuffer(i.stdoutBuf.Bytes()))
+
+		return err
+	}
+
+	if i.cmd == nil || i.cmd.ProcessState != nil {
+		defer out.Close()
+
+		return copyStdout(out)
+	}
+
 	go func() {
 		if _, err := io.Copy(i.stdinpw, NewReader(ctx, in)); err != nil {
 			log.Println(err)
 		}
 	}()
-	buf := bytes.NewBuffer(i.stdoutBuf.Bytes())
-	if _, err := io.Copy(out, buf); err != nil {
+
+	if err := copyStdout(out); err != nil {
 		return err
 	}
 

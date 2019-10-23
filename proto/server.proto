@@ -6,6 +6,8 @@ service Daemon {
   rpc List(ListRequest) returns (ListResponse) {}
   rpc Attach(stream AttachRequest) returns (stream ServerOutput) {}
   rpc Stop(StopRequest) returns (StopResponse) {}
+  rpc Start(StartRequest) returns (StartResponse) {}
+  rpc Restart(RestartRequest) returns (RestartResponse) {}
 }
 
 message Server {
@@ -35,5 +37,15 @@ message ServerOutput {
 
 message StopResponse {}
 message StopRequest {
-  string name = 1;
+  repeated string names = 1;
+}
+
+message StartResponse {}
+message StartRequest {
+  repeated string names = 1;
+}
+
+message RestartResponse {}
+message RestartRequest {
+  repeated string names = 1;
 }

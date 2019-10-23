@@ -50,12 +50,45 @@ func (s *Server) Stop(ctx context.Context, in *proto.StopRequest) (*proto.StopRe
 	defer s.d.m.Unlock()
 
 	for _, i := range s.d.instances {
-		if i.Conf().Name == in.Name {
-			log.Println("stopping server", i.Stop())
+		for _, name := range in.Names {
+			if i.Conf().Name == name {
+				log.Println("stopping server", i.Stop())
+			}
 		}
 	}
 
-	return nil, nil
+	return &proto.StopResponse{}, nil
+}
+
+func (s *Server) Start(ctx context.Context, in *proto.StartRequest) (*proto.StartResponse, error) {
+	s.d.m.Lock()
+	defer s.d.m.Unlock()
+
+	for _, i := range s.d.instances {
+		for _, name := range in.Names {
+			if i.Conf().Name == name {
+				log.Println("starting server")
+
+				go func() {
+					if err := i.Start(); err != nil {
+						log.Println(err)
+					}
+				}()
+			}
+		}
+	}
+
+	return &proto.StartResponse{}, nil
+}
+
+func (s *Server) Restart(ctx context.Context, in *proto.RestartRequest) (*proto.RestartResponse, error) {
+	if _, err := s.Stop(ctx, &proto.StopRequest{Names: in.Names}); err != nil {
+		return nil, err
+	}
+	if _, err := s.Start(ctx, &proto.StartRequest{Names: in.Names}); err != nil {
+		return nil, err
+	}
+	return &proto.RestartResponse{}, nil
 }
 
 func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
@@ -121,38 +154,6 @@ func (s *Server) Attach(stream proto.Daemon_AttachServer) error {
 		log.Println("waiting for wg")
 		wg.Wait()
 		log.Println("done waiting for wg")
-
-		//  out := make(chan string)
-		//  in := make(chan string)
-
-		//  go func() {
-		//    _ = instance.Attach(in, out)
-		//  }()
-
-		//  go func() {
-		//    for {
-		//      req, err := stream.Recv()
-		//      if err != nil {
-		//        log.Println(err)
-		//        return
-		//      }
-
-		//      if req.Msg != "" {
-		//        in <- req.Msg
-		//      }
-		//    }
-		//  }()
-
-		//  for {
-		//    select {
-		//    case <-stream.Context().Done():
-		//      close(out)
-		//      close(in)
-		//      return nil
-		//    case msg := <-out:
-		//      stream.Send(&proto.ServerOutput{Msg: msg})
-		//    }
-		//  }
 	}
 
 	return nil

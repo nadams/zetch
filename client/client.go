@@ -121,7 +121,17 @@ func (c *Client) Attach(name string, in io.Reader, out io.Writer) error {
 	return nil
 }
 
-func (c *Client) Stop(name string) error {
-	_, err := c.client.Stop(context.Background(), &proto.StopRequest{Name: name})
+func (c *Client) Stop(names ...string) error {
+	_, err := c.client.Stop(context.Background(), &proto.StopRequest{Names: names})
+	return err
+}
+
+func (c *Client) Start(names ...string) error {
+	_, err := c.client.Start(context.Background(), &proto.StartRequest{Names: names})
+	return err
+}
+
+func (c *Client) Restart(names ...string) error {
+	_, err := c.client.Restart(context.Background(), &proto.RestartRequest{Names: names})
 	return err
 }
